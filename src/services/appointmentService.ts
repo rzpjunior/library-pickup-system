@@ -1,9 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
+import { StatusCodes } from 'http-status-codes';
 import { Appointment } from '../models/appointment';
 import { bookService } from './bookService';
 import { logger } from '../utils/logger';
 import { CreateAppointmentDto, AppointmentResponseDto } from '../dtos/appointmentDtos';
 import { BookWithAppointments, UserWithAppointments } from '../types/appointmentInterfaces';
+import { CustomError } from '../utils/customError';
 
 class AppointmentService {
   private appointments: Map<string, Appointment> = new Map();
@@ -90,10 +92,14 @@ class AppointmentService {
     return Array.from(this.appointments.values());
   }
 
-  cancelAppointment(appointmentId: string): Appointment {
+  cancelAppointment(appointmentId: string): AppointmentResponseDto {
     const appointment = this.appointments.get(appointmentId);
     if (!appointment) {
-      throw new Error('Appointment not found');
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
+    }
+
+    if (appointment.status === 'cancelled') {
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is already cancelled');
     }
 
     appointment.status = 'cancelled';
@@ -105,7 +111,7 @@ class AppointmentService {
     }
 
     logger.info(`Cancelled appointment: ${appointmentId}`);
-    return appointment;
+    return this.mapAppointmentToDto(appointment);
   }
 
   getAppointmentById(appointmentId: string): Appointment | undefined {
