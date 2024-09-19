@@ -82,8 +82,12 @@ router.get('/:id', (req, res, next) => {
 
 router.post('/:id/approve', (req, res, next) => {
   try {
-    const approvedAppointment = appointmentService.approveAppointment(req.params.id);
-    res.json(formatSuccessResponse(StatusCodes.OK, approvedAppointment));
+    const { isApproved } = req.body;
+    if (typeof isApproved !== 'boolean') {
+      return res.status(StatusCodes.BAD_REQUEST).json(formatErrorResponse(StatusCodes.BAD_REQUEST, 'isApproved must be a boolean'));
+    }
+    const updatedAppointment = appointmentService.approveAppointment(req.params.id, isApproved);
+    res.json(formatSuccessResponse(StatusCodes.OK, updatedAppointment));
   } catch (error) {
     next(error);
   }

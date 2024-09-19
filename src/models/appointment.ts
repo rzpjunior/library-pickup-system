@@ -4,6 +4,7 @@ export interface Appointment {
   userId: string;
   pickupTime: Date;
   createdAt: Date;
-  status: 'pending' | 'approved' | 'cancelled' | 'completed';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed';
   approvedAt: string;
+  rejectedAt: string;
 }

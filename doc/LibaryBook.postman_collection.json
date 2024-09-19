@@ -47,7 +47,7 @@
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": "http://localhost:3000/v1/appointments/user/user213"
+						"url": "http://localhost:3000/v1/appointments/user/user200"
 					},
 					"response": []
 				},
@@ -56,7 +56,7 @@
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": "http://localhost:3000/v1/appointments/book/works/OL450063W"
+						"url": "http://localhost:3000/v1/appointments/book/works/OL18417W"
 					},
 					"response": []
 				},
@@ -67,7 +67,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"bookId\": \"/works/OL450063W\",\r\n  \"userId\": \"user212\",\r\n  \"pickupTime\": \"2023-09-20T14:00:00Z\"\r\n}",
+							"raw": "{\r\n  \"bookId\": \"/works/OL450063W\",\r\n  \"userId\": \"user201\",\r\n  \"pickupTime\": \"2023-09-20T14:00:00Z\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -83,7 +83,36 @@
 					"request": {
 						"method": "POST",
 						"header": [],
-						"url": "http://localhost:3000/v1/appointments/{appointmentId}/approve"
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isApproved\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/v1/appointments/46fc4e5e-da92-4c76-8658-4d0783e9d5ec/approve",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"v1",
+								"appointments",
+								"46fc4e5e-da92-4c76-8658-4d0783e9d5ec",
+								"approve"
+							],
+							"query": [
+								{
+									"key": "isApproved",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						}
 					},
 					"response": []
 				},
@@ -92,7 +121,7 @@
 					"request": {
 						"method": "POST",
 						"header": [],
-						"url": "http://localhost:3000/v1/appointments/226dc656-9628-4f96-96b4-7c9a1b8d5363/cancel"
+						"url": "http://localhost:3000/v1/appointments/bc6af2b9-2d2d-4234-866a-0aa7bc00a816/cancel"
 					},
 					"response": []
 				}

@@ -18,7 +18,8 @@ export class AppointmentService {
       pickupTime: appointment.pickupTime,
       createdAt: appointment.createdAt,
       status: appointment.status,
-      approvedAt: appointment.approvedAt
+      approvedAt: appointment.approvedAt,
+      rejectedAt: appointment.rejectedAt
     };
   }
 
@@ -50,6 +51,7 @@ export class AppointmentService {
       createdAt: new Date(),
       status: 'pending',
       approvedAt: '',
+      rejectedAt: '',
     };
 
     this.appointments.set(appointment.id, appointment);
@@ -57,7 +59,7 @@ export class AppointmentService {
     return this.mapAppointmentToDto(appointment);
   }
 
-  approveAppointment(appointmentId: string): AppointmentResponseDto {
+  approveAppointment(appointmentId: string, isApproved: boolean): AppointmentResponseDto {
     const appointment = this.appointments.get(appointmentId);
     if (!appointment) {
       throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
@@ -67,16 +69,21 @@ export class AppointmentService {
       throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is not in pending status');
     }
 
-    appointment.status = 'approved';
-    appointment.approvedAt = new Date().toISOString();
-    this.appointments.set(appointmentId, appointment);
-
-    const book = bookService.getBookById(appointment.bookId);
-    if (book) {
-      bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
+    if (isApproved) {
+      appointment.status = 'approved';
+      appointment.approvedAt = new Date().toISOString();
+      const book = bookService.getBookById(appointment.bookId);
+      if (book) {
+        bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
+      }
+      logger.info(`Approved appointment: ${appointmentId}`);
+    } else {
+      appointment.status = 'rejected';
+      appointment.rejectedAt = new Date().toISOString();
+      logger.info(`Rejected appointment: ${appointmentId}`);
     }
 
-    logger.info(`Approved appointment: ${appointmentId}`);
+    this.appointments.set(appointmentId, appointment);
     return this.mapAppointmentToDto(appointment);
   }
 
@@ -122,7 +129,8 @@ export class AppointmentService {
           pickupTime: appointment.pickupTime,
           createdAt: appointment.createdAt,
           status: appointment.status,
-          approvedAt: appointment.approvedAt
+          approvedAt: appointment.approvedAt,
+          rejectedAt: appointment.rejectedAt
         });
       }
     });
@@ -146,7 +154,8 @@ export class AppointmentService {
             pickupTime: appointment.pickupTime,
             createdAt: appointment.createdAt,
             status: appointment.status,
-            approvedAt: appointment.approvedAt
+            approvedAt: appointment.approvedAt,
+            rejectedAt: appointment.rejectedAt
           });
         }
       }

@@ -46,6 +46,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date(),
         createdAt: new Date(),
         approvedAt: new Date().toISOString(),
+        rejectedAt: new Date().toISOString(),
       });
       service['appointments'].set('appointment2', {
         id: 'appointment2',
@@ -55,6 +56,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date(),
         createdAt: new Date(),
         approvedAt: '',
+        rejectedAt: '',
       });
 
       const appointmentDto: CreateAppointmentDto = {
@@ -92,48 +94,70 @@ describe('AppointmentService', () => {
     });
   });
 
-  describe('approveAppointment', () => {
-    it('should approve a pending appointment', () => {
-      const mockAppointment: Appointment = {
-        id: 'appointment1',
-        bookId: 'book1',
-        userId: 'user1',
-        status: 'pending',
-        pickupTime: new Date('2023-09-25T14:00:00Z'),
-        createdAt: new Date(),
-        approvedAt: '',
-      };
-      service['appointments'].set('appointment1', mockAppointment);
-
-      const mockBook = { id: 'book1', availableCopies: 1 };
-      (bookService.getBookById as jest.Mock).mockReturnValue(mockBook);
-      (bookService.updateBookAvailability as jest.Mock).mockImplementation();
-
-      const result = service.approveAppointment('appointment1');
-
-      expect(result.status).toBe('approved');
-      expect(result.approvedAt).not.toBe('');
-      expect(bookService.updateBookAvailability).toHaveBeenCalledWith('book1', 0);
-    });
-
-    it('should throw an error if the appointment is not found', () => {
-      expect(() => service.approveAppointment('nonexistent')).toThrow('Appointment not found');
-    });
-
-    it('should throw an error if the appointment is not pending', () => {
-      const mockAppointment: Appointment = {
-        id: 'appointment1',
-        bookId: 'book1',
-        userId: 'user1',
-        status: 'approved',
-        pickupTime: new Date('2023-09-25T14:00:00Z'),
-        createdAt: new Date(),
-        approvedAt: new Date().toISOString(),
-      };
-      service['appointments'].set('appointment1', mockAppointment);
-
-      expect(() => service.approveAppointment('appointment1')).toThrow('Appointment is not in pending status');
-    });
+  describe('approveOrRejectAppointment', () => {
+      it('should approve a pending appointment', () => {
+        const mockAppointment: Appointment = {
+          id: 'appointment1',
+          bookId: 'book1',
+          userId: 'user1',
+          status: 'pending',
+          pickupTime: new Date('2023-09-25T14:00:00Z'),
+          createdAt: new Date(),
+          approvedAt: '',
+          rejectedAt: '',
+        };
+        service['appointments'].set('appointment1', mockAppointment);
+  
+        const mockBook = { id: 'book1', availableCopies: 1 };
+        (bookService.getBookById as jest.Mock).mockReturnValue(mockBook);
+        (bookService.updateBookAvailability as jest.Mock).mockImplementation();
+  
+        const result = service.approveAppointment('appointment1', true);
+  
+        expect(result.status).toBe('approved');
+        expect(result.approvedAt).not.toBe('');
+        expect(bookService.updateBookAvailability).toHaveBeenCalledWith('book1', 0);
+      });
+  
+      it('should reject a pending appointment', () => {
+        const mockAppointment: Appointment = {
+          id: 'appointment1',
+          bookId: 'book1',
+          userId: 'user1',
+          status: 'pending',
+          pickupTime: new Date('2023-09-25T14:00:00Z'),
+          createdAt: new Date(),
+          approvedAt: '',
+          rejectedAt: ''
+        };
+        service['appointments'].set('appointment1', mockAppointment);
+  
+        const result = service.approveAppointment('appointment1', false);
+  
+        expect(result.status).toBe('rejected');
+        expect(result.approvedAt).toBe('');
+        expect(bookService.updateBookAvailability).not.toHaveBeenCalled();
+      });
+  
+      it('should throw an error if the appointment is not found', () => {
+        expect(() => service.approveAppointment('nonexistent', true)).toThrow('Appointment not found');
+      });
+  
+      it('should throw an error if the appointment is not pending', () => {
+        const mockAppointment: Appointment = {
+          id: 'appointment1',
+          bookId: 'book1',
+          userId: 'user1',
+          status: 'approved',
+          pickupTime: new Date('2023-09-25T14:00:00Z'),
+          createdAt: new Date(),
+          approvedAt: new Date().toISOString(),
+          rejectedAt: new Date().toISOString(),
+        };
+        service['appointments'].set('appointment1', mockAppointment);
+  
+        expect(() => service.approveAppointment('appointment1', true)).toThrow('Appointment is not in pending status');
+      });
   });
 
   describe('cancelAppointment', () => {
@@ -146,6 +170,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-25T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: new Date().toISOString(),
+        rejectedAt: new Date().toISOString(),
       };
       service['appointments'].set('appointment1', mockAppointment);
 
@@ -168,6 +193,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-25T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: '',
+        rejectedAt: '',
       };
       service['appointments'].set('appointment1', mockAppointment);
 
@@ -190,6 +216,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-25T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: '',
+        rejectedAt: '',
       };
       service['appointments'].set('appointment1', mockAppointment);
 
@@ -210,6 +237,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-25T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: new Date().toISOString(),
+        rejectedAt: new Date().toISOString(),
       };
       const mockAppointment2: Appointment = {
         id: 'appointment2',
@@ -219,6 +247,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-26T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: '',
+        rejectedAt: '',
       };
       service['appointments'].set('appointment1', mockAppointment1);
       service['appointments'].set('appointment2', mockAppointment2);
@@ -235,6 +264,7 @@ describe('AppointmentService', () => {
             createdAt: mockAppointment1.createdAt,
             status: 'approved',
             approvedAt: mockAppointment1.approvedAt,
+            rejectedAt: mockAppointment1.rejectedAt,
           },
           {
             userId: 'user2',
@@ -243,6 +273,7 @@ describe('AppointmentService', () => {
             createdAt: mockAppointment2.createdAt,
             status: 'pending',
             approvedAt: '',
+            rejectedAt: '',
           },
         ],
       });
@@ -273,6 +304,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-25T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: new Date().toISOString(),
+        rejectedAt: new Date().toISOString(),
       };
       const mockAppointment2: Appointment = {
         id: 'appointment2',
@@ -282,6 +314,7 @@ describe('AppointmentService', () => {
         pickupTime: new Date('2023-09-26T14:00:00Z'),
         createdAt: new Date(),
         approvedAt: '',
+        rejectedAt: '',
       };
       service['appointments'].set('appointment1', mockAppointment1);
       service['appointments'].set('appointment2', mockAppointment2);
@@ -298,6 +331,7 @@ describe('AppointmentService', () => {
             createdAt: mockAppointment1.createdAt,
             status: 'approved',
             approvedAt: mockAppointment1.approvedAt,
+            rejectedAt: mockAppointment1.rejectedAt,
           },
           {
             book: mockBook2,
@@ -306,6 +340,7 @@ describe('AppointmentService', () => {
             createdAt: mockAppointment2.createdAt,
             status: 'pending',
             approvedAt: '',
+            rejectedAt: '',
           },
         ],
       });
