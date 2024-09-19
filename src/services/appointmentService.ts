@@ -7,7 +7,7 @@ import { CreateAppointmentDto, AppointmentResponseDto } from '../dtos/appointmen
 import { BookWithAppointments, UserWithAppointments } from '../types/appointmentInterfaces';
 import { CustomError } from '../utils/customError';
 
-class AppointmentService {
+export class AppointmentService {
   private appointments: Map<string, Appointment> = new Map();
 
   private mapAppointmentToDto(appointment: Appointment): AppointmentResponseDto {
