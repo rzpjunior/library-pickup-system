@@ -37,7 +37,8 @@ class AppointmentService {
       userId: appointmentDto.userId,
       pickupTime: new Date(appointmentDto.pickupTime),
       createdAt: new Date(),
-      status: 'pending'
+      status: 'pending',
+      approvedAt: ''
     };
 
     this.appointments.set(appointment.id, appointment);
@@ -56,7 +57,7 @@ class AppointmentService {
     }
 
     appointment.status = 'approved';
-    appointment.approvedAt = new Date();
+    appointment.approvedAt = new Date().toISOString();
     this.appointments.set(appointmentId, appointment);
 
     const book = bookService.getBookById(appointment.bookId);

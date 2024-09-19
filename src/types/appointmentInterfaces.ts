@@ -5,7 +5,7 @@ export interface AppointmentDetails {
     pickupTime: Date;
     createdAt: Date;
     status: 'pending' | 'approved' | 'cancelled' | 'completed';
-    approvedAt?: Date;
+    approvedAt: string;
   }
   
   export interface BookWithAppointments extends Book {

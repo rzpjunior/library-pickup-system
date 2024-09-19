@@ -5,5 +5,5 @@ export interface Appointment {
   pickupTime: Date;
   createdAt: Date;
   status: 'pending' | 'approved' | 'cancelled' | 'completed';
-  approvedAt?: Date;
+  approvedAt: string;
 }
