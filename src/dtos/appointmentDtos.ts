@@ -9,6 +9,8 @@ export interface CreateAppointmentDto {
     bookId: string;
     userId: string;
     pickupTime: Date;
-    status: 'active' | 'cancelled' | 'completed';
+    createdAt: Date;
+    status: 'pending' | 'approved' | 'cancelled' | 'completed';
+    approvedAt?: Date;
   }
   

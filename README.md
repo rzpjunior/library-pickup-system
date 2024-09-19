@@ -5,6 +5,8 @@
 2. [Running the Project](#running-the-project)
 3. [API Flow](#api-flow)
 4. [API Endpoints](#api-endpoints)
+5. [Error Handling](#error-handling)
+6. [Testing](#testing)
 
 ## Installation
 
@@ -12,7 +14,7 @@ To set up this project, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/rzpjunior/library-pickup-system
+   git clone <repository-url>
    cd library-pickup-system
    ```
 
@@ -61,32 +63,38 @@ Here's a step-by-step guide to test the main functionalities of the API:
        "pickupTime": "2023-09-25T14:00:00Z"
      }
      ```
+   - This creates a pending appointment.
 
-4. **View User Appointments**
-   - Endpoint: `GET /v1/appointments/user/{userId}`
-   - Example: `GET /v1/appointments/user/user123`
+4. **Approve an Appointment**
+   - Endpoint: `POST /v1/appointments/{appointmentId}/approve`
+   - Example: `POST /v1/appointments/abc123/approve`
+   - This approves a pending appointment and updates book availability.
 
 5. **View All Appointments**
    - Endpoint: `GET /v1/appointments`
    - This will return a list of all appointments.
 
-6. **View Appointments for a Specific Book**
+6. **View User Appointments**
+   - Endpoint: `GET /v1/appointments/user/{userId}`
+   - Example: `GET /v1/appointments/user/user123`
+
+7. **View Appointments for a Specific Book**
    - Endpoint: `GET /v1/appointments/book/works/{bookId}`
    - Example: `GET /v1/appointments/book/works/OL45883W`
 
-7. **Cancel an Appointment**
+8. **Cancel an Appointment**
    - Endpoint: `POST /v1/appointments/{appointmentId}/cancel`
-   - Use an appointment ID from step 4 or 5.
    - Example: `POST /v1/appointments/abc123/cancel`
 
-8. **Check Updated Book Availability**
-   - Repeat step 2 to see the updated availability after cancellation.
+9. **Check Updated Book Availability**
+   - Repeat step 2 to see the updated availability after approval and cancellation.
 
 ## API Endpoints
 
 - `GET /v1/books`: Get all books
 - `GET /v1/books/works/{bookId}/availability`: Check book availability
-- `POST /v1/appointments`: Create a new appointment
+- `POST /v1/appointments`: Create a new appointment (status: pending)
+- `POST /v1/appointments/{appointmentId}/approve`: Approve a pending appointment
 - `GET /v1/appointments`: Get all appointments
 - `GET /v1/appointments/user/{userId}`: Get user's appointments
 - `GET /v1/appointments/book/works/{bookId}`: Get appointments for a specific book
@@ -102,7 +110,16 @@ Each endpoint returns data in the following format:
 }
 ```
 
-For API documentation, please refer to the API documentation file in doc/LibraryBook.postman_collection.json.
+Appointment objects include the following fields:
+- `id`: Unique identifier for the appointment
+- `bookId`: ID of the book
+- `userId`: ID of the user making the appointment
+- `pickupTime`: Scheduled time for pickup
+- `createdAt`: Timestamp when the appointment was created
+- `status`: Can be 'pending', 'approved', 'cancelled', or 'completed'
+- `approvedAt`: Timestamp when the appointment was approved
+
+Note: Book availability is only updated when an appointment is approved, not when it's initially created.
 
 ## Error Handling
 
@@ -123,7 +140,7 @@ Common error scenarios:
 
 ## Testing
 
-To run the test suite (if implemented):
+To run the test:
 
 ```
 npm test

@@ -80,4 +80,13 @@ router.get('/:id', (req, res, next) => {
   }
 });
 
+router.post('/:id/approve', (req, res, next) => {
+  try {
+    const approvedAppointment = appointmentService.approveAppointment(req.params.id);
+    res.json(formatSuccessResponse(StatusCodes.OK, approvedAppointment));
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

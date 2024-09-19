@@ -1,7 +1,9 @@
 export interface Appointment {
-    id: string;
-    bookId: string;
-    userId: string;
-    pickupTime: Date;
-    status: 'active' | 'completed' | 'cancelled';
-  }
+  id: string;
+  bookId: string;
+  userId: string;
+  pickupTime: Date;
+  createdAt: Date;
+  status: 'pending' | 'approved' | 'cancelled' | 'completed';
+  approvedAt?: Date;
+}

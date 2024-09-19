@@ -16,17 +16,19 @@ class AppointmentService {
       bookId: appointment.bookId,
       userId: appointment.userId,
       pickupTime: appointment.pickupTime,
-      status: appointment.status
+      createdAt: appointment.createdAt,
+      status: appointment.status,
+      approvedAt: appointment.approvedAt
     };
   }
 
   createAppointment(appointmentDto: CreateAppointmentDto): AppointmentResponseDto {
     const book = bookService.getBookById(appointmentDto.bookId);
     if (!book) {
-      throw new Error('Book not found');
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Book not found');
     }
     if (book.availableCopies <= 0) {
-      throw new Error('No available copies');
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'No available copies');
     }
 
     const appointment: Appointment = {
@@ -34,13 +36,60 @@ class AppointmentService {
       bookId: appointmentDto.bookId,
       userId: appointmentDto.userId,
       pickupTime: new Date(appointmentDto.pickupTime),
-      status: 'active'
+      createdAt: new Date(),
+      status: 'pending'
     };
 
     this.appointments.set(appointment.id, appointment);
-    bookService.updateBookAvailability(appointmentDto.bookId, book.availableCopies - 1);
-
     logger.info(`Created appointment: ${appointment.id}`);
+    return this.mapAppointmentToDto(appointment);
+  }
+
+  approveAppointment(appointmentId: string): AppointmentResponseDto {
+    const appointment = this.appointments.get(appointmentId);
+    if (!appointment) {
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
+    }
+
+    if (appointment.status !== 'pending') {
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is not in pending status');
+    }
+
+    appointment.status = 'approved';
+    appointment.approvedAt = new Date();
+    this.appointments.set(appointmentId, appointment);
+
+    const book = bookService.getBookById(appointment.bookId);
+    if (book) {
+      bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
+    }
+
+    logger.info(`Approved appointment: ${appointmentId}`);
+    return this.mapAppointmentToDto(appointment);
+  }
+
+  cancelAppointment(appointmentId: string): AppointmentResponseDto {
+    const appointment = this.appointments.get(appointmentId);
+    if (!appointment) {
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
+    }
+
+    if (appointment.status === 'cancelled') {
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is already cancelled');
+    }
+
+    const previousStatus = appointment.status;
+    appointment.status = 'cancelled';
+    this.appointments.set(appointmentId, appointment);
+
+    if (previousStatus === 'approved') {
+      const book = bookService.getBookById(appointment.bookId);
+      if (book) {
+        bookService.updateBookAvailability(appointment.bookId, book.availableCopies + 1);
+      }
+    }
+
+    logger.info(`Cancelled appointment: ${appointmentId}`);
     return this.mapAppointmentToDto(appointment);
   }
 
@@ -59,7 +108,9 @@ class AppointmentService {
           userId: appointment.userId,
           appointmentId: appointment.id,
           pickupTime: appointment.pickupTime,
-          status: appointment.status
+          createdAt: appointment.createdAt,
+          status: appointment.status,
+          approvedAt: appointment.approvedAt
         });
       }
     });
@@ -74,14 +125,18 @@ class AppointmentService {
     };
 
     this.appointments.forEach(appointment => {
-      const book = bookService.getBookById(appointment.bookId);
-      if (book && appointment.userId === userId) {
-        userAppointments.appointments.push({
-          book,
-          appointmentId: appointment.id,
-          pickupTime: appointment.pickupTime,
-          status: appointment.status
-        });
+      if (appointment.userId === userId) {
+        const book = bookService.getBookById(appointment.bookId);
+        if (book) {
+          userAppointments.appointments.push({
+            book,
+            appointmentId: appointment.id,
+            pickupTime: appointment.pickupTime,
+            createdAt: appointment.createdAt,
+            status: appointment.status,
+            approvedAt: appointment.approvedAt
+          });
+        }
       }
     });
 
@@ -92,27 +147,6 @@ class AppointmentService {
     return Array.from(this.appointments.values());
   }
 
-  cancelAppointment(appointmentId: string): AppointmentResponseDto {
-    const appointment = this.appointments.get(appointmentId);
-    if (!appointment) {
-      throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
-    }
-
-    if (appointment.status === 'cancelled') {
-      throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is already cancelled');
-    }
-
-    appointment.status = 'cancelled';
-    this.appointments.set(appointmentId, appointment);
-
-    const book = bookService.getBookById(appointment.bookId);
-    if (book) {
-      bookService.updateBookAvailability(appointment.bookId, book.availableCopies + 1);
-    }
-
-    logger.info(`Cancelled appointment: ${appointmentId}`);
-    return this.mapAppointmentToDto(appointment);
-  }
 
   getAppointmentById(appointmentId: string): Appointment | undefined {
     return this.appointments.get(appointmentId);
