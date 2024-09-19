@@ -93,7 +93,7 @@ Here's a step-by-step guide to test the main functionalities of the API:
 
 - `GET /v1/books`: Get all books
 - `GET /v1/books/works/{bookId}/availability`: Check book availability
-- `POST /v1/appointments`: Create a new appointment (status: pending)
+- `POST /v1/appointments`: Create a new appointment (status: pending) (user can only borrow 2 copies for each books)
 - `POST /v1/appointments/{appointmentId}/approve`: Approve a pending appointment
 - `GET /v1/appointments`: Get all appointments
 - `GET /v1/appointments/user/{userId}`: Get user's appointments
