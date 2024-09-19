@@ -1,7 +1,27 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Appointment } from '../models/appointment';
+import { Book } from '../models/book';
 import { bookService } from './bookService';
 import { logger } from '../utils/logger';
+
+interface BookWithAppointments extends Book {
+  appointments: {
+    userId: string;
+    appointmentId: string;
+    pickupTime: Date;
+    status: 'active' | 'cancelled' | 'completed';
+  }[];
+}
+
+interface UserWithAppointments {
+  userId: string;
+  appointments: {
+    book: Book;
+    appointmentId: string;
+    pickupTime: Date;
+    status: 'active' | 'cancelled' | 'completed';
+  }[];
+}
 
 class AppointmentService {
   private appointments: Map<string, Appointment> = new Map();
@@ -30,11 +50,55 @@ class AppointmentService {
     return appointment;
   }
 
-  getAppointmentsByUser(userId: string): Appointment[] {
-    return Array.from(this.appointments.values()).filter(app => app.userId === userId);
+  getAppointmentsByBookId(bookId: string): BookWithAppointments | null {
+    const book = bookService.getBookById(bookId);
+    if (!book) return null;
+
+    const bookAppointments: BookWithAppointments = {
+      ...book,
+      appointments: []
+    };
+
+    this.appointments.forEach(appointment => {
+      if (appointment.bookId === bookId) {
+        bookAppointments.appointments.push({
+          userId: appointment.userId,
+          appointmentId: appointment.id,
+          pickupTime: appointment.pickupTime,
+          status: appointment.status
+        });
+      }
+    });
+
+    return bookAppointments;
   }
 
-  cancelAppointment(appointmentId: string): void {
+  getUserAppointments(userId: string): UserWithAppointments {
+    const userAppointments: UserWithAppointments = {
+      userId,
+      appointments: []
+    };
+
+    this.appointments.forEach(appointment => {
+      const book = bookService.getBookById(appointment.bookId);
+      if (book && appointment.userId === userId) {
+        userAppointments.appointments.push({
+          book,
+          appointmentId: appointment.id,
+          pickupTime: appointment.pickupTime,
+          status: appointment.status
+        });
+      }
+    });
+
+    return userAppointments;
+  }
+
+  getAllAppointments(): Appointment[] {
+    return Array.from(this.appointments.values());
+  }
+
+  cancelAppointment(appointmentId: string): Appointment {
     const appointment = this.appointments.get(appointmentId);
     if (!appointment) {
       throw new Error('Appointment not found');
@@ -49,6 +113,11 @@ class AppointmentService {
     }
 
     logger.info(`Cancelled appointment: ${appointmentId}`);
+    return appointment;
+  }
+
+  getAppointmentById(appointmentId: string): Appointment | undefined {
+    return this.appointments.get(appointmentId);
   }
 }
 
