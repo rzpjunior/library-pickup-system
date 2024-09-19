@@ -109,6 +109,7 @@ Each endpoint returns data in the following format:
   "data": { ... }
 }
 ```
+For API documentation, please refer to the API documentation file in doc/LibraryBook.postman_collection.json.
 
 Appointment objects include the following fields:
 - `id`: Unique identifier for the appointment
