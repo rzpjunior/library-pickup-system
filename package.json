@@ -1,0 +1,28 @@
+{
+  "name": "library-pickup-system",
+  "version": "1.0.0",
+  "description": "Library Book Pickup System",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-rate-limit": "^5.3.0",
+    "uuid": "^8.3.2",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/express-rate-limit": "^6.0.0",
+    "@types/node": "^16.0.0",
+    "@types/uuid": "^8.3.1",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.6.2"
+  }
+}
