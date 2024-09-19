@@ -2,16 +2,28 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { appointmentService } from '../services/appointmentService';
 import { formatSuccessResponse, formatErrorResponse } from '../utils/responseFormatter';
+import { CreateAppointmentDto } from '../dtos/appointmentDtos';
 
 const router = Router();
 
 router.post('/', (req, res, next) => {
   try {
-    const { bookId, userId, pickupTime } = req.body;
-    const formattedBookId = bookId.startsWith('/') ? bookId : `/works/${bookId}`;
-    const appointment = appointmentService.createAppointment(formattedBookId, userId, new Date(pickupTime));
+    const appointmentDto: CreateAppointmentDto = {
+      bookId: req.body.bookId,
+      userId: req.body.userId,
+      pickupTime: req.body.pickupTime
+    };
+
+    const appointment = appointmentService.createAppointment(appointmentDto);
     res.status(StatusCodes.CREATED).json(formatSuccessResponse(StatusCodes.CREATED, appointment));
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'No available copies') {
+        return res.status(StatusCodes.BAD_REQUEST).json(
+          formatErrorResponse(StatusCodes.BAD_REQUEST, 'The book is not available for appointment')
+        );
+      }
+    }
     next(error);
   }
 });

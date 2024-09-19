@@ -1,33 +1,25 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Appointment } from '../models/appointment';
-import { Book } from '../models/book';
 import { bookService } from './bookService';
 import { logger } from '../utils/logger';
-
-interface BookWithAppointments extends Book {
-  appointments: {
-    userId: string;
-    appointmentId: string;
-    pickupTime: Date;
-    status: 'active' | 'cancelled' | 'completed';
-  }[];
-}
-
-interface UserWithAppointments {
-  userId: string;
-  appointments: {
-    book: Book;
-    appointmentId: string;
-    pickupTime: Date;
-    status: 'active' | 'cancelled' | 'completed';
-  }[];
-}
+import { CreateAppointmentDto, AppointmentResponseDto } from '../dtos/appointmentDtos';
+import { BookWithAppointments, UserWithAppointments } from '../types/appointmentInterfaces';
 
 class AppointmentService {
   private appointments: Map<string, Appointment> = new Map();
 
-  createAppointment(bookId: string, userId: string, pickupTime: Date): Appointment {
-    const book = bookService.getBookById(bookId);
+  private mapAppointmentToDto(appointment: Appointment): AppointmentResponseDto {
+    return {
+      id: appointment.id,
+      bookId: appointment.bookId,
+      userId: appointment.userId,
+      pickupTime: appointment.pickupTime,
+      status: appointment.status
+    };
+  }
+
+  createAppointment(appointmentDto: CreateAppointmentDto): AppointmentResponseDto {
+    const book = bookService.getBookById(appointmentDto.bookId);
     if (!book) {
       throw new Error('Book not found');
     }
@@ -37,17 +29,17 @@ class AppointmentService {
 
     const appointment: Appointment = {
       id: uuidv4(),
-      bookId,
-      userId,
-      pickupTime,
+      bookId: appointmentDto.bookId,
+      userId: appointmentDto.userId,
+      pickupTime: new Date(appointmentDto.pickupTime),
       status: 'active'
     };
 
     this.appointments.set(appointment.id, appointment);
-    bookService.updateBookAvailability(bookId, book.availableCopies - 1);
+    bookService.updateBookAvailability(appointmentDto.bookId, book.availableCopies - 1);
 
     logger.info(`Created appointment: ${appointment.id}`);
-    return appointment;
+    return this.mapAppointmentToDto(appointment);
   }
 
   getAppointmentsByBookId(bookId: string): BookWithAppointments | null {
