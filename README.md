@@ -1,0 +1,130 @@
+# Library Book Pickup System
+
+## Table of Contents
+1. [Installation](#installation)
+2. [Running the Project](#running-the-project)
+3. [API Flow](#api-flow)
+4. [API Endpoints](#api-endpoints)
+
+## Installation
+
+To set up this project, follow these steps:
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/rzpjunior/library-pickup-system
+   cd library-pickup-system
+   ```
+
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory with the following content:
+   ```
+   PORT=3000
+   OPEN_LIBRARY_API_BASE_URL=https://openlibrary.org/subjects/
+   GENRE=science_fiction
+   ```
+
+## Running the Project
+
+To run the project in development mode:
+
+```
+npm run dev
+```
+
+The server will start on `http://localhost:3000` (or the port specified in your .env file).
+
+## API Flow
+
+Here's a step-by-step guide to test the main functionalities of the API:
+
+1. **Get List of Books**
+   - Endpoint: `GET /v1/books`
+   - This will return a list of science fiction books fetched from the OpenLibrary API.
+
+2. **Check Book Availability**
+   - Endpoint: `GET /v1/books/works/{bookId}/availability`
+   - Use a book ID from the previous request.
+   - Example: `GET /v1/books/works/OL45883W/availability`
+
+3. **Create an Appointment**
+   - Endpoint: `POST /v1/appointments`
+   - Request body:
+     ```json
+     {
+       "bookId": "/works/OL45883W",
+       "userId": "user123",
+       "pickupTime": "2023-09-25T14:00:00Z"
+     }
+     ```
+
+4. **View User Appointments**
+   - Endpoint: `GET /v1/appointments/user/{userId}`
+   - Example: `GET /v1/appointments/user/user123`
+
+5. **View All Appointments**
+   - Endpoint: `GET /v1/appointments`
+   - This will return a list of all appointments.
+
+6. **View Appointments for a Specific Book**
+   - Endpoint: `GET /v1/appointments/book/works/{bookId}`
+   - Example: `GET /v1/appointments/book/works/OL45883W`
+
+7. **Cancel an Appointment**
+   - Endpoint: `POST /v1/appointments/{appointmentId}/cancel`
+   - Use an appointment ID from step 4 or 5.
+   - Example: `POST /v1/appointments/abc123/cancel`
+
+8. **Check Updated Book Availability**
+   - Repeat step 2 to see the updated availability after cancellation.
+
+## API Endpoints
+
+- `GET /v1/books`: Get all books
+- `GET /v1/books/works/{bookId}/availability`: Check book availability
+- `POST /v1/appointments`: Create a new appointment
+- `GET /v1/appointments`: Get all appointments
+- `GET /v1/appointments/user/{userId}`: Get user's appointments
+- `GET /v1/appointments/book/works/{bookId}`: Get appointments for a specific book
+- `POST /v1/appointments/{appointmentId}/cancel`: Cancel an appointment
+
+Each endpoint returns data in the following format:
+
+```json
+{
+  "status": 200,
+  "message": "success",
+  "data": { ... }
+}
+```
+
+For API documentation, please refer to the API documentation file in doc/LibraryBook.postman_collection.json.
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns error messages in the following format:
+
+```json
+{
+  "status": 400,
+  "message": "Error message here",
+  "data": null
+}
+```
+
+Common error scenarios:
+- 400: Bad Request (e.g., invalid input, book not available)
+- 404: Not Found (e.g., book or appointment not found)
+- 500: Internal Server Error
+
+## Testing
+
+To run the test suite (if implemented):
+
+```
+npm test
+```

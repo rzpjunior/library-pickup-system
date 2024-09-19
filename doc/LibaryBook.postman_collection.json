@@ -1,0 +1,93 @@
+{
+	"info": {
+		"_postman_id": "29b53785-1513-4f7c-9492-b098ddbf68fc",
+		"name": "LibaryBook",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "8125281",
+		"_collection_link": "https://harmoniq.postman.co/workspace/Harmoniq-Workspace~0b4c3313-1701-4e6f-8e58-097055d623f5/collection/8125281-29b53785-1513-4f7c-9492-b098ddbf68fc?action=share&source=collection_link&creator=8125281"
+	},
+	"item": [
+		{
+			"name": "Books",
+			"item": [
+				{
+					"name": "Book",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/books"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Book Availability",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/books/works/OL450063W/availability"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Appointments",
+			"item": [
+				{
+					"name": "All Appointments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Appointment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"bookId\": \"/works/OL450063W\",\r\n  \"userId\": \"user212\",\r\n  \"pickupTime\": \"2023-09-20T14:00:00Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "http://localhost:3000/v1/appointments"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Appointment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/226dc656-9628-4f96-96b4-7c9a1b8d5363/cancel"
+					},
+					"response": []
+				},
+				{
+					"name": "User Appointment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/user/user213"
+					},
+					"response": []
+				},
+				{
+					"name": "Appointment by Book",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/book/works/OL450063W"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
