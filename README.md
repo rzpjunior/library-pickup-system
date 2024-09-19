@@ -64,11 +64,21 @@ Here's a step-by-step guide to test the main functionalities of the API:
      }
      ```
    - This creates a pending appointment.
+   - User can only request appointment max 2 copies for each books
 
-4. **Approve an Appointment**
+4. **Approve or Reject an Appointment**
    - Endpoint: `POST /v1/appointments/{appointmentId}/approve`
    - Example: `POST /v1/appointments/abc123/approve`
-   - This approves a pending appointment and updates book availability.
+   - Request Body:
+     ```json
+     {
+       "isApproved": true
+     }
+     ```
+   - This endpoint approves or rejects a pending appointment based on the `isApproved` value.
+   - If `isApproved` is `true`, the appointment is approved and book availability is updated.
+   - If `isApproved` is `false`, the appointment is rejected without affecting book availability.
+   - The appointment must be in a 'pending' status for this action to be valid.
 
 5. **View All Appointments**
    - Endpoint: `GET /v1/appointments`
@@ -77,10 +87,14 @@ Here's a step-by-step guide to test the main functionalities of the API:
 6. **View User Appointments**
    - Endpoint: `GET /v1/appointments/user/{userId}`
    - Example: `GET /v1/appointments/user/user123`
+   - This endpoint returns a list of all appointments for the specified user.
+   - The response includes details of each appointment along with the associated book information.
 
 7. **View Appointments for a Specific Book**
    - Endpoint: `GET /v1/appointments/book/works/{bookId}`
    - Example: `GET /v1/appointments/book/works/OL45883W`
+   - This endpoint returns a list of all appointments for the specified book.
+   - The response includes the book details and a list of appointments associated with it.
 
 8. **Cancel an Appointment**
    - Endpoint: `POST /v1/appointments/{appointmentId}/cancel`
@@ -93,8 +107,8 @@ Here's a step-by-step guide to test the main functionalities of the API:
 
 - `GET /v1/books`: Get all books
 - `GET /v1/books/works/{bookId}/availability`: Check book availability
-- `POST /v1/appointments`: Create a new appointment (status: pending) (user can only borrow 2 copies for each books)
-- `POST /v1/appointments/{appointmentId}/approve`: Approve a pending appointment
+- `POST /v1/appointments`: Create a new appointment (status: pending)
+- `POST /v1/appointments/{appointmentId}/approve`: Approve or Reject a pending appointment
 - `GET /v1/appointments`: Get all appointments
 - `GET /v1/appointments/user/{userId}`: Get user's appointments
 - `GET /v1/appointments/book/works/{bookId}`: Get appointments for a specific book
