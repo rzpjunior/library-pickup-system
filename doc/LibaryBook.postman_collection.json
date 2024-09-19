@@ -43,6 +43,24 @@
 					"response": []
 				},
 				{
+					"name": "User Appointment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/user/user213"
+					},
+					"response": []
+				},
+				{
+					"name": "Appointment by Book",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/book/works/OL450063W"
+					},
+					"response": []
+				},
+				{
 					"name": "Create Appointment",
 					"request": {
 						"method": "POST",
@@ -61,29 +79,20 @@
 					"response": []
 				},
 				{
+					"name": "Appointment Approval",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "http://localhost:3000/v1/appointments/{appointmentId}/approve"
+					},
+					"response": []
+				},
+				{
 					"name": "Cancel Appointment",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"url": "http://localhost:3000/v1/appointments/226dc656-9628-4f96-96b4-7c9a1b8d5363/cancel"
-					},
-					"response": []
-				},
-				{
-					"name": "User Appointment",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": "http://localhost:3000/v1/appointments/user/user213"
-					},
-					"response": []
-				},
-				{
-					"name": "Appointment by Book",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": "http://localhost:3000/v1/appointments/book/works/OL450063W"
 					},
 					"response": []
 				}
