@@ -22,6 +22,12 @@ export class AppointmentService {
     };
   }
 
+  private getUserActiveAppointmentsForBook(userId: string, bookId: string): Appointment[] {
+    return Array.from(this.appointments.values()).filter(
+      app => app.userId === userId && app.bookId === bookId && (app.status === 'pending' || app.status === 'approved')
+    );
+  }
+
   createAppointment(appointmentDto: CreateAppointmentDto): AppointmentResponseDto {
     const book = bookService.getBookById(appointmentDto.bookId);
     if (!book) {
@@ -31,6 +37,11 @@ export class AppointmentService {
       throw new CustomError(StatusCodes.BAD_REQUEST, 'No available copies');
     }
 
+    const userBookAppointments = this.getUserActiveAppointmentsForBook(appointmentDto.userId, appointmentDto.bookId);
+    if (userBookAppointments.length >= 2) {
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'You have reached the maximum number of appointments for this book');
+    }
+
     const appointment: Appointment = {
       id: uuidv4(),
       bookId: appointmentDto.bookId,
@@ -38,7 +49,7 @@ export class AppointmentService {
       pickupTime: new Date(appointmentDto.pickupTime),
       createdAt: new Date(),
       status: 'pending',
-      approvedAt: ''
+      approvedAt: '',
     };
 
     this.appointments.set(appointment.id, appointment);
@@ -144,8 +155,14 @@ export class AppointmentService {
     return userAppointments;
   }
 
-  getAllAppointments(): Appointment[] {
-    return Array.from(this.appointments.values());
+  getAllAppointments(): AppointmentResponseDto[] {
+    return Array.from(this.appointments.values()).map(appointment => {
+      const book = bookService.getBookById(appointment.bookId);
+      return {
+        ...this.mapAppointmentToDto(appointment),
+        book: book || null
+      };
+    });
   }
 
 

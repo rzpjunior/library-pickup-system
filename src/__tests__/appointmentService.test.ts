@@ -34,6 +34,38 @@ describe('AppointmentService', () => {
       expect(new Date(result.pickupTime)).toEqual(new Date(appointmentDto.pickupTime));
     });
 
+    it('should throw an error if user has 2 active appointments for the same book', () => {
+      const mockBook = { id: 'book1', availableCopies: 5 };
+      (bookService.getBookById as jest.Mock).mockReturnValue(mockBook);
+
+      service['appointments'].set('appointment1', {
+        id: 'appointment1',
+        bookId: 'book1',
+        userId: 'user1',
+        status: 'approved',
+        pickupTime: new Date(),
+        createdAt: new Date(),
+        approvedAt: new Date().toISOString(),
+      });
+      service['appointments'].set('appointment2', {
+        id: 'appointment2',
+        bookId: 'book1',
+        userId: 'user1',
+        status: 'pending',
+        pickupTime: new Date(),
+        createdAt: new Date(),
+        approvedAt: '',
+      });
+
+      const appointmentDto: CreateAppointmentDto = {
+        bookId: 'book1',
+        userId: 'user1',
+        pickupTime: '2023-09-25T14:00:00Z',
+      };
+
+      expect(() => service.createAppointment(appointmentDto)).toThrow('You have reached the maximum number of appointments for this book');
+    });
+
     it('should throw an error if the book is not found', () => {
       (bookService.getBookById as jest.Mock).mockReturnValue(null);
 
