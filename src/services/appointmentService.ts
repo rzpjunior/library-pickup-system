@@ -83,6 +83,10 @@ export class AppointmentService {
       const book = await bookService.getBookById(appointment.bookId);
       
       if (approvalData.isApproved) {
+        if (book.availableCopies <= 0) {
+          throw new CustomError(StatusCodes.BAD_REQUEST, 'No available copies of the book');
+        }
+        
         appointment.status = 'approved';
         appointment.approvedAt = new Date().toISOString();
         await bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
