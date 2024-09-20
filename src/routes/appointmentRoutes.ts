@@ -1,92 +1,68 @@
 import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { appointmentService } from '../services/appointmentService';
-import { formatSuccessResponse, formatErrorResponse } from '../utils/responseFormatter';
-import { CreateAppointmentDto } from '../dtos/appointmentDtos';
+import { formatSuccessResponse } from '../utils/responseFormatter';
 
 const router = Router();
 
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
-    const appointmentDto: CreateAppointmentDto = {
-      bookId: req.body.bookId,
-      userId: req.body.userId,
-      pickupTime: req.body.pickupTime
-    };
-
-    const appointment = appointmentService.createAppointment(appointmentDto);
+    const appointment = await appointmentService.createAppointment(req.body);
     res.status(StatusCodes.CREATED).json(formatSuccessResponse(StatusCodes.CREATED, appointment));
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === 'No available copies') {
-        return res.status(StatusCodes.BAD_REQUEST).json(
-          formatErrorResponse(StatusCodes.BAD_REQUEST, 'The book is not available for appointment')
-        );
-      }
-    }
     next(error);
   }
 });
 
-router.get('/book/:prefix/:id', (req, res, next) => {
+router.get('/book/:prefix/:id', async (req, res, next) => {
   try {
     const bookId = `/${req.params.prefix}/${req.params.id}`;
-    const bookAppointments = appointmentService.getAppointmentsByBookId(bookId);
-    if (!bookAppointments) {
-      return res.status(StatusCodes.NOT_FOUND).json(formatErrorResponse(StatusCodes.NOT_FOUND, 'Book not found'));
-    }
+    const bookAppointments = await appointmentService.getAppointmentsByBookId(bookId);
     res.json(formatSuccessResponse(StatusCodes.OK, bookAppointments));
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/user/:userId', (req, res, next) => {
+router.get('/user/:userId', async (req, res, next) => {
   try {
-    const userAppointments = appointmentService.getUserAppointments(req.params.userId);
+    const userAppointments = await appointmentService.getUserAppointments(req.params.userId);
     res.json(formatSuccessResponse(StatusCodes.OK, userAppointments));
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const appointments = appointmentService.getAllAppointments();
+    const appointments = await appointmentService.getAllAppointments();
     res.json(formatSuccessResponse(StatusCodes.OK, appointments));
   } catch (error) {
     next(error);
   }
 });
 
-router.post('/:id/cancel', (req, res, next) => {
+router.post('/:id/cancel', async (req, res, next) => {
   try {
-    const cancelledAppointment = appointmentService.cancelAppointment(req.params.id);
+    const cancelledAppointment = await appointmentService.cancelAppointment(req.params.id);
     res.json(formatSuccessResponse(StatusCodes.OK, cancelledAppointment));
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const appointment = appointmentService.getAppointmentById(req.params.id);
-    if (!appointment) {
-      return res.status(StatusCodes.NOT_FOUND).json(formatErrorResponse(StatusCodes.NOT_FOUND, 'Appointment not found'));
-    }
+    const appointment = await appointmentService.getAppointmentById(req.params.id);
     res.json(formatSuccessResponse(StatusCodes.OK, appointment));
   } catch (error) {
     next(error);
   }
 });
 
-router.post('/:id/approve', (req, res, next) => {
+router.post('/:id/approve', async (req, res, next) => {
   try {
-    const { isApproved } = req.body;
-    if (typeof isApproved !== 'boolean') {
-      return res.status(StatusCodes.BAD_REQUEST).json(formatErrorResponse(StatusCodes.BAD_REQUEST, 'isApproved must be a boolean'));
-    }
-    const updatedAppointment = appointmentService.approveAppointment(req.params.id, isApproved);
+    const updatedAppointment = await appointmentService.approveAppointment(req.params.id, req.body);
     res.json(formatSuccessResponse(StatusCodes.OK, updatedAppointment));
   } catch (error) {
     next(error);

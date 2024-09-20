@@ -6,11 +6,12 @@ import { logger } from '../utils/logger';
 import { CreateAppointmentDto, AppointmentResponseDto } from '../dtos/appointmentDtos';
 import { BookWithAppointments, UserWithAppointments } from '../types/appointmentInterfaces';
 import { CustomError } from '../utils/customError';
+import { Book } from '../models/book';
 
 export class AppointmentService {
   private appointments: Map<string, Appointment> = new Map();
 
-  private mapAppointmentToDto(appointment: Appointment): AppointmentResponseDto {
+  private mapAppointmentToDto(appointment: Appointment, book?: Book | null): AppointmentResponseDto {
     return {
       id: appointment.id,
       bookId: appointment.bookId,
@@ -19,7 +20,8 @@ export class AppointmentService {
       createdAt: appointment.createdAt,
       status: appointment.status,
       approvedAt: appointment.approvedAt,
-      rejectedAt: appointment.rejectedAt
+      rejectedAt: appointment.rejectedAt,
+      book: book || undefined
     };
   }
 
@@ -29,37 +31,45 @@ export class AppointmentService {
     );
   }
 
-  createAppointment(appointmentDto: CreateAppointmentDto): AppointmentResponseDto {
-    const book = bookService.getBookById(appointmentDto.bookId);
-    if (!book) {
-      throw new CustomError(StatusCodes.NOT_FOUND, 'Book not found');
-    }
-    if (book.availableCopies <= 0) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, 'No available copies');
-    }
+  async createAppointment(appointmentDto: CreateAppointmentDto): Promise<AppointmentResponseDto> {
+    try {
+      const book = await bookService.getBookById(appointmentDto.bookId);
+      if (book.availableCopies <= 0) {
+        throw new CustomError(StatusCodes.BAD_REQUEST, 'The book is not available for appointment');
+      }
 
-    const userBookAppointments = this.getUserActiveAppointmentsForBook(appointmentDto.userId, appointmentDto.bookId);
-    if (userBookAppointments.length >= 2) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, 'You have reached the maximum number of appointments for this book');
+      const userBookAppointments = this.getUserActiveAppointmentsForBook(appointmentDto.userId, appointmentDto.bookId);
+      if (userBookAppointments.length >= 2) {
+        throw new CustomError(StatusCodes.BAD_REQUEST, 'You have reached the maximum number of appointments for this book');
+      }
+
+      const appointment: Appointment = {
+        id: uuidv4(),
+        bookId: appointmentDto.bookId,
+        userId: appointmentDto.userId,
+        pickupTime: new Date(appointmentDto.pickupTime),
+        createdAt: new Date(),
+        status: 'pending',
+        approvedAt: '',
+        rejectedAt: '',
+      };
+
+      this.appointments.set(appointment.id, appointment);
+      logger.info(`Created appointment: ${appointment.id}`);
+      return this.mapAppointmentToDto(appointment, book);
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error;
+      }
+      throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create appointment');
     }
-
-    const appointment: Appointment = {
-      id: uuidv4(),
-      bookId: appointmentDto.bookId,
-      userId: appointmentDto.userId,
-      pickupTime: new Date(appointmentDto.pickupTime),
-      createdAt: new Date(),
-      status: 'pending',
-      approvedAt: '',
-      rejectedAt: '',
-    };
-
-    this.appointments.set(appointment.id, appointment);
-    logger.info(`Created appointment: ${appointment.id}`);
-    return this.mapAppointmentToDto(appointment);
   }
 
-  approveAppointment(appointmentId: string, isApproved: boolean): AppointmentResponseDto {
+  async approveAppointment(appointmentId: string, approvalData: { isApproved?: boolean }): Promise<AppointmentResponseDto> {
+    if (typeof approvalData.isApproved !== 'boolean') {
+      throw new CustomError(StatusCodes.BAD_REQUEST, 'isApproved must be a boolean');
+    }
+
     const appointment = this.appointments.get(appointmentId);
     if (!appointment) {
       throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
@@ -69,25 +79,31 @@ export class AppointmentService {
       throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is not in pending status');
     }
 
-    if (isApproved) {
-      appointment.status = 'approved';
-      appointment.approvedAt = new Date().toISOString();
-      const book = bookService.getBookById(appointment.bookId);
-      if (book) {
-        bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
+    try {
+      const book = await bookService.getBookById(appointment.bookId);
+      
+      if (approvalData.isApproved) {
+        appointment.status = 'approved';
+        appointment.approvedAt = new Date().toISOString();
+        await bookService.updateBookAvailability(appointment.bookId, book.availableCopies - 1);
+        logger.info(`Approved appointment: ${appointmentId}`);
+      } else {
+        appointment.status = 'rejected';
+        appointment.rejectedAt = new Date().toISOString();
+        logger.info(`Rejected appointment: ${appointmentId}`);
       }
-      logger.info(`Approved appointment: ${appointmentId}`);
-    } else {
-      appointment.status = 'rejected';
-      appointment.rejectedAt = new Date().toISOString();
-      logger.info(`Rejected appointment: ${appointmentId}`);
-    }
 
-    this.appointments.set(appointmentId, appointment);
-    return this.mapAppointmentToDto(appointment);
+      this.appointments.set(appointmentId, appointment);
+      return this.mapAppointmentToDto(appointment, book);
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error;
+      }
+      throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to approve/reject appointment');
+    }
   }
 
-  cancelAppointment(appointmentId: string): AppointmentResponseDto {
+  async cancelAppointment(appointmentId: string): Promise<AppointmentResponseDto> {
     const appointment = this.appointments.get(appointmentId);
     if (!appointment) {
       throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
@@ -97,57 +113,68 @@ export class AppointmentService {
       throw new CustomError(StatusCodes.BAD_REQUEST, 'Appointment is already cancelled');
     }
 
-    const previousStatus = appointment.status;
-    appointment.status = 'cancelled';
-    this.appointments.set(appointmentId, appointment);
+    try {
+      const previousStatus = appointment.status;
+      appointment.status = 'cancelled';
+      this.appointments.set(appointmentId, appointment);
 
-    if (previousStatus === 'approved') {
-      const book = bookService.getBookById(appointment.bookId);
-      if (book) {
-        bookService.updateBookAvailability(appointment.bookId, book.availableCopies + 1);
+      let book: Book | null = null;
+      if (previousStatus === 'approved') {
+        book = await bookService.getBookById(appointment.bookId);
+        await bookService.updateBookAvailability(appointment.bookId, book.availableCopies + 1);
       }
+
+      logger.info(`Cancelled appointment: ${appointmentId}`);
+      return this.mapAppointmentToDto(appointment, book);
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error;
+      }
+      throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to cancel appointment');
     }
-
-    logger.info(`Cancelled appointment: ${appointmentId}`);
-    return this.mapAppointmentToDto(appointment);
   }
 
-  getAppointmentsByBookId(bookId: string): BookWithAppointments | null {
-    const book = bookService.getBookById(bookId);
-    if (!book) return null;
+  async getAppointmentsByBookId(bookId: string): Promise<BookWithAppointments> {
+    try {
+      const book = await bookService.getBookById(bookId);
+      const bookAppointments: BookWithAppointments = {
+        ...book,
+        appointments: []
+      };
 
-    const bookAppointments: BookWithAppointments = {
-      ...book,
-      appointments: []
-    };
+      this.appointments.forEach(appointment => {
+        if (appointment.bookId === bookId) {
+          bookAppointments.appointments.push({
+            userId: appointment.userId,
+            appointmentId: appointment.id,
+            pickupTime: appointment.pickupTime,
+            createdAt: appointment.createdAt,
+            status: appointment.status,
+            approvedAt: appointment.approvedAt,
+            rejectedAt: appointment.rejectedAt
+          });
+        }
+      });
 
-    this.appointments.forEach(appointment => {
-      if (appointment.bookId === bookId) {
-        bookAppointments.appointments.push({
-          userId: appointment.userId,
-          appointmentId: appointment.id,
-          pickupTime: appointment.pickupTime,
-          createdAt: appointment.createdAt,
-          status: appointment.status,
-          approvedAt: appointment.approvedAt,
-          rejectedAt: appointment.rejectedAt
-        });
+      return bookAppointments;
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error;
       }
-    });
-
-    return bookAppointments;
+      throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to get appointments for book');
+    }
   }
 
-  getUserAppointments(userId: string): UserWithAppointments {
+  async getUserAppointments(userId: string): Promise<UserWithAppointments> {
     const userAppointments: UserWithAppointments = {
       userId,
       appointments: []
     };
 
-    this.appointments.forEach(appointment => {
+    for (const appointment of this.appointments.values()) {
       if (appointment.userId === userId) {
-        const book = bookService.getBookById(appointment.bookId);
-        if (book) {
+        try {
+          const book = await bookService.getBookById(appointment.bookId);
           userAppointments.appointments.push({
             book,
             appointmentId: appointment.id,
@@ -157,26 +184,43 @@ export class AppointmentService {
             approvedAt: appointment.approvedAt,
             rejectedAt: appointment.rejectedAt
           });
+        } catch (error) {
+          logger.error(`Failed to get book for appointment ${appointment.id}`, error);
         }
       }
-    });
+    }
 
     return userAppointments;
   }
 
-  getAllAppointments(): AppointmentResponseDto[] {
-    return Array.from(this.appointments.values()).map(appointment => {
-      const book = bookService.getBookById(appointment.bookId);
-      return {
-        ...this.mapAppointmentToDto(appointment),
-        book: book || null
-      };
-    });
+  async getAllAppointments(): Promise<AppointmentResponseDto[]> {
+    const allAppointments: AppointmentResponseDto[] = [];
+
+    for (const appointment of this.appointments.values()) {
+      try {
+        const book = await bookService.getBookById(appointment.bookId);
+        allAppointments.push(this.mapAppointmentToDto(appointment, book));
+      } catch (error) {
+        logger.error(`Failed to get book for appointment ${appointment.id}`, error);
+        allAppointments.push(this.mapAppointmentToDto(appointment, null));
+      }
+    }
+
+    return allAppointments;
   }
 
-
-  getAppointmentById(appointmentId: string): Appointment | undefined {
-    return this.appointments.get(appointmentId);
+  async getAppointmentById(appointmentId: string): Promise<AppointmentResponseDto> {
+    const appointment = this.appointments.get(appointmentId);
+    if (!appointment) {
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Appointment not found');
+    }
+    try {
+      const book = await bookService.getBookById(appointment.bookId);
+      return this.mapAppointmentToDto(appointment, book);
+    } catch (error) {
+      logger.error(`Failed to get book for appointment ${appointmentId}`, error);
+      return this.mapAppointmentToDto(appointment, null);
+    }
   }
 }
 

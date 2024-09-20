@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { Book } from '../models/book';
 import { logger } from '../utils/logger';
+import { CustomError } from '../utils/customError';
+import { StatusCodes } from 'http-status-codes';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,24 +35,30 @@ class BookService {
       logger.info(`Fetched ${this.books.size} books from Open Library API`);
     } catch (error) {
       logger.error('Error fetching books from Open Library API', error);
-      throw new Error('Failed to fetch books');
+      throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to fetch books');
     }
   }
 
-  getBooks(): Book[] {
+  async getBooks(): Promise<Book[]> {
     return Array.from(this.books.values());
   }
 
-  getBookById(id: string): Book | undefined {
-    return this.books.get(id);
+  async getBookById(id: string): Promise<Book> {
+    const book = this.books.get(id);
+    if (!book) {
+      throw new CustomError(StatusCodes.NOT_FOUND, 'Book not found');
+    }
+    return book;
   }
 
-  updateBookAvailability(id: string, availableCopies: number): void {
-    const book = this.books.get(id);
-    if (book) {
-      book.availableCopies = availableCopies;
-      this.books.set(id, book);
-    }
+  async getBookAvailability(id: string): Promise<Book> {
+    return this.getBookById(id);
+  }
+
+  async updateBookAvailability(id: string, availableCopies: number): Promise<void> {
+    const book = await this.getBookById(id);
+    book.availableCopies = availableCopies;
+    this.books.set(id, book);
   }
 }
 
